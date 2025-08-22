@@ -112,16 +112,21 @@ class Retain_Admin_Color {
 	/**
 	 * Force the user's admin color choice.
 	 *
-	 * @param mixed  $result The value to return instead.
-	 * @param string $option Option name.
-	 * @param int    $user   User ID.
+	 * @param mixed           $result The value to return instead.
+	 * @param string          $option Option name.
+	 * @param WP_User|int     $user   User object or User ID.
 	 * @return string
 	 */
-	public function force_user_admin_color( $result, string $option, int $user ): string {
+	public function force_user_admin_color( $result, string $option, $user ): string {
 		if ( 'admin_color' === $option ) {
-			$user_admin_color = get_user_meta( $user, 'admin_color', true );
-			if ( ! empty( $user_admin_color ) ) {
-				return $user_admin_color;
+			// Handle both WP_User object and user ID
+			$user_id = is_object( $user ) && $user instanceof WP_User ? $user->ID : (int) $user;
+			
+			if ( $user_id ) {
+				$user_admin_color = get_user_meta( $user_id, 'admin_color', true );
+				if ( ! empty( $user_admin_color ) ) {
+					return $user_admin_color;
+				}
 			}
 		}
 		return $result;
