@@ -3,7 +3,7 @@
  * Plugin Name: Retain Admin Color
  * Plugin URI: https://github.com/laxmariappan/retain-admin-color
  * Description: Retains the admin color scheme of the logged-in user, preventing it from being overridden.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Lax Mariappan
  * Author URI: https://laxmariappan.com
  * License: GPL v2 or later
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants
-define( 'RETAIN_ADMIN_COLOR_VERSION', '1.0.0' );
+define( 'RETAIN_ADMIN_COLOR_VERSION', '1.0.1' );
 define( 'RETAIN_ADMIN_COLOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'RETAIN_ADMIN_COLOR_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'RETAIN_ADMIN_COLOR_PLUGIN_FILE', __FILE__ );
