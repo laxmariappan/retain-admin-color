@@ -92,12 +92,20 @@ class Retain_Admin_Color {
 		}
 
 		$user_id = get_current_user_id();
+		if ( ! $user_id ) {
+			return;
+		}
+
 		$admin_color = get_user_meta( $user_id, 'admin_color', true );
 
 		// If user has a specific admin color set, ensure it's applied
-		if ( ! empty( $admin_color ) && 'fresh' !== $admin_color ) {
+		// We want to retain ALL color choices, not just non-fresh ones
+		if ( ! empty( $admin_color ) ) {
 			// Force the admin color to be the user's preferred choice
 			add_filter( 'get_user_option_admin_color', array( $this, 'force_user_admin_color' ), 10, 3 );
+			
+			// Also ensure the global $user_id has the correct color when WordPress checks it
+			add_action( 'admin_head', array( $this, 'ensure_admin_color_body_class' ) );
 		}
 	}
 
@@ -120,6 +128,37 @@ class Retain_Admin_Color {
 	}
 
 	/**
+	 * Ensure the correct admin color body class is applied.
+	 */
+	public function ensure_admin_color_body_class(): void {
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+
+		$user_id = get_current_user_id();
+		if ( ! $user_id ) {
+			return;
+		}
+
+		$admin_color = get_user_meta( $user_id, 'admin_color', true );
+		
+		if ( ! empty( $admin_color ) ) {
+			// Add JavaScript to ensure the body class is correct
+			echo '<script type="text/javascript">
+				(function() {
+					var body = document.body;
+					if (body) {
+						// Remove any existing admin-color-* classes
+						body.className = body.className.replace(/admin-color-[a-z]+/g, "");
+						// Add the correct admin color class
+						body.classList.add("admin-color-' . esc_js( $admin_color ) . '");
+					}
+				})();
+			</script>' . "\n";
+		}
+	}
+
+	/**
 	 * Enqueue admin styles to ensure color scheme is properly applied.
 	 */
 	public function enqueue_admin_styles(): void {
@@ -128,13 +167,29 @@ class Retain_Admin_Color {
 		}
 
 		$user_id = get_current_user_id();
+		if ( ! $user_id ) {
+			return;
+		}
+
 		$admin_color = get_user_meta( $user_id, 'admin_color', true );
 
-		if ( ! empty( $admin_color ) && 'fresh' !== $admin_color ) {
-			// Add inline CSS to override any conflicting styles and ensure color scheme is retained
+		if ( ! empty( $admin_color ) ) {
+			// Add inline CSS to ensure the admin color scheme is retained and prioritized
 			$custom_css = sprintf(
 				'/* Retain Admin Color Plugin - Ensuring %s color scheme is retained */
-				body.admin-color-%s { /* Force the admin color scheme */ }',
+				body.admin-color-%s,
+				body.admin-color-%s #wpadminbar,
+				body.admin-color-%s .wp-core-ui .button-primary {
+					/* Ensure the color scheme is properly applied with higher specificity */
+				}
+				
+				/* Force correct admin color scheme application */
+				body:not(.admin-color-%s) {
+					/* Remove conflicting styles that might override the user color choice */
+				}',
+				esc_attr( $admin_color ),
+				esc_attr( $admin_color ),
+				esc_attr( $admin_color ),
 				esc_attr( $admin_color ),
 				esc_attr( $admin_color )
 			);
