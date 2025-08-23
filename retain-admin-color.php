@@ -225,7 +225,10 @@ class Retain_Admin_Color {
 		$admin_color = get_user_meta( $user_id, 'admin_color', true );
 
 		if ( ! empty( $admin_color ) && 'fresh' !== $admin_color ) {
-			// Load the WordPress admin color scheme CSS on frontend
+			// First, register the admin color scheme using wp_admin_css_color
+			$this->register_admin_color_scheme( $admin_color );
+			
+			// Then load the CSS file
 			$css_url = includes_url( "css/colors/$admin_color/colors.min.css" );
 			$css_path = ABSPATH . WPINC . "/css/colors/$admin_color/colors.min.css";
 			
@@ -237,8 +240,71 @@ class Retain_Admin_Color {
 					get_bloginfo( 'version' ) 
 				);
 				
-				error_log( 'Retain Admin Color: FRONTEND - Enqueued ' . $admin_color . ' CSS' );
+				// Also enqueue the base admin styles that the color scheme depends on
+				wp_enqueue_style( 
+					'frontend-admin-colors-base',
+					includes_url( 'css/colors/fresh/colors.min.css' ),
+					array(),
+					get_bloginfo( 'version' )
+				);
+				
+				error_log( 'Retain Admin Color: FRONTEND - Registered and enqueued ' . $admin_color . ' CSS' );
 			}
+		}
+	}
+
+	/**
+	 * Register the admin color scheme for frontend use.
+	 *
+	 * @param string $color_scheme The color scheme name.
+	 */
+	private function register_admin_color_scheme( string $color_scheme ): void {
+		// Get the color scheme data
+		$color_schemes = array(
+			'light' => array(
+				'name' => __( 'Light' ),
+				'colors' => array( '#e5e5e5', '#999', '#d64e07', '#04a4cc' ),
+			),
+			'blue' => array(
+				'name' => __( 'Blue' ),
+				'colors' => array( '#52accc', '#096484', '#e14d43', '#096484' ),
+			),
+			'coffee' => array(
+				'name' => __( 'Coffee' ),
+				'colors' => array( '#46403c', '#59524c', '#c7a589', '#9ea476' ),
+			),
+			'ectoplasm' => array(
+				'name' => __( 'Ectoplasm' ),
+				'colors' => array( '#413256', '#523f6d', '#a3b745', '#d46f15' ),
+			),
+			'midnight' => array(
+				'name' => __( 'Midnight' ),
+				'colors' => array( '#25282b', '#363b3f', '#69a8bb', '#e14d43' ),
+			),
+			'ocean' => array(
+				'name' => __( 'Ocean' ),
+				'colors' => array( '#627c83', '#738e96', '#9ebaa0', '#87a6bc' ),
+			),
+			'sunrise' => array(
+				'name' => __( 'Sunrise' ),
+				'colors' => array( '#b43c38', '#cf4944', '#dd823b', '#ccaf0b' ),
+			),
+			'modern' => array(
+				'name' => __( 'Modern' ),
+				'colors' => array( '#1e1e1e', '#3858e9', '#833378', '#d22d2d' ),
+			),
+		);
+
+		if ( isset( $color_schemes[ $color_scheme ] ) ) {
+			$scheme = $color_schemes[ $color_scheme ];
+			wp_admin_css_color( 
+				$color_scheme, 
+				$scheme['name'], 
+				includes_url( "css/colors/$color_scheme/colors.min.css" ),
+				$scheme['colors']
+			);
+			
+			error_log( 'Retain Admin Color: FRONTEND - Registered color scheme ' . $color_scheme );
 		}
 	}
 
@@ -258,16 +324,107 @@ class Retain_Admin_Color {
 		$admin_color = get_user_meta( $user_id, 'admin_color', true );
 
 		if ( ! empty( $admin_color ) ) {
+			// Get color scheme colors
+			$color_data = $this->get_color_scheme_data( $admin_color );
+			
+			// Add comprehensive styling and body class
+			echo '<style type="text/css">
+				/* Retain Admin Color - ' . esc_attr( $admin_color ) . ' scheme */
+				body.admin-color-' . esc_attr( $admin_color ) . ' {
+					--wp-admin-theme-color: ' . esc_attr( $color_data['primary'] ) . ';
+					--wp-admin-theme-color-darker-10: ' . esc_attr( $color_data['secondary'] ) . ';
+					--wp-admin-border-color-darker-20: ' . esc_attr( $color_data['tertiary'] ) . ';
+					--wp-admin-scheme-color: ' . esc_attr( $color_data['highlight'] ) . ';
+				}
+				
+				/* Apply admin colors to common elements */
+				body.admin-color-' . esc_attr( $admin_color ) . ' .admin-color-element {
+					background-color: var(--wp-admin-theme-color);
+					color: white;
+				}
+				
+				body.admin-color-' . esc_attr( $admin_color ) . ' .admin-color-border {
+					border-color: var(--wp-admin-theme-color);
+				}
+			</style>' . "\n";
+			
 			// Add the admin color class to the body via JavaScript
 			echo '<script type="text/javascript">
 				document.addEventListener("DOMContentLoaded", function() {
 					document.body.classList.add("admin-color-' . esc_js( $admin_color ) . '");
-					console.log("Retain Admin Color: Added admin-color-' . esc_js( $admin_color ) . ' class to body");
+					console.log("Retain Admin Color: Applied ' . esc_js( $admin_color ) . ' color scheme to frontend");
 				});
 			</script>' . "\n";
 			
-			error_log( 'Retain Admin Color: FRONTEND - Added body class script for ' . $admin_color );
+			error_log( 'Retain Admin Color: FRONTEND - Added comprehensive styling for ' . $admin_color );
 		}
+	}
+
+	/**
+	 * Get color scheme data for a given admin color.
+	 *
+	 * @param string $color_scheme The color scheme name.
+	 * @return array Array with primary, secondary, tertiary, and highlight colors.
+	 */
+	private function get_color_scheme_data( string $color_scheme ): array {
+		$color_schemes = array(
+			'fresh' => array(
+				'primary' => '#0073aa',
+				'secondary' => '#005177', 
+				'tertiary' => '#0085ba',
+				'highlight' => '#00a0d2'
+			),
+			'light' => array(
+				'primary' => '#999999',
+				'secondary' => '#666666',
+				'tertiary' => '#d54e21',
+				'highlight' => '#04a4cc'
+			),
+			'blue' => array(
+				'primary' => '#52accc',
+				'secondary' => '#096484',
+				'tertiary' => '#e14d43', 
+				'highlight' => '#096484'
+			),
+			'coffee' => array(
+				'primary' => '#46403c',
+				'secondary' => '#59524c',
+				'tertiary' => '#c7a589',
+				'highlight' => '#9ea476'
+			),
+			'ectoplasm' => array(
+				'primary' => '#523f6d',
+				'secondary' => '#413256',
+				'tertiary' => '#a3b745',
+				'highlight' => '#d46f15'
+			),
+			'midnight' => array(
+				'primary' => '#363b3f',
+				'secondary' => '#25282b',
+				'tertiary' => '#69a8bb',
+				'highlight' => '#e14d43'
+			),
+			'ocean' => array(
+				'primary' => '#738e96',
+				'secondary' => '#627c83',
+				'tertiary' => '#9ebaa0',
+				'highlight' => '#87a6bc'
+			),
+			'sunrise' => array(
+				'primary' => '#cf4944',
+				'secondary' => '#b43c38',
+				'tertiary' => '#dd823b',
+				'highlight' => '#ccaf0b'
+			),
+			'modern' => array(
+				'primary' => '#3858e9',
+				'secondary' => '#1e1e1e',
+				'tertiary' => '#833378',
+				'highlight' => '#d22d2d'
+			),
+		);
+
+		return $color_schemes[ $color_scheme ] ?? $color_schemes['fresh'];
 	}
 
 	/**

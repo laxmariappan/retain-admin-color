@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Admin Color Frontend</title>
+</head>
+<body>
+    <h1>Admin Color Frontend Test</h1>
+    <p>This page will help test if the admin color scheme is applied to the frontend.</p>
+    
+    <div class="admin-color-element" style="padding: 20px; margin: 20px 0; border-radius: 5px;">
+        <h2>Primary Color Test</h2>
+        <p>This should show the admin primary color background.</p>
+    </div>
+    
+    <div class="admin-color-border" style="padding: 20px; margin: 20px 0; border: 3px solid; background: #f9f9f9;">
+        <h2>Border Color Test</h2>
+        <p>This should have the admin color as border.</p>
+    </div>
+    
+    <div style="padding: 20px; margin: 20px 0; background: var(--wp-admin-theme-color, #ccc); color: white; border-radius: 5px;">
+        <h2>CSS Variable Test</h2>
+        <p>This uses CSS variable --wp-admin-theme-color</p>
+    </div>
+
+    <script>
+        // Check if admin color class is applied
+        document.addEventListener('DOMContentLoaded', function() {
+            const bodyClasses = document.body.classList.toString();
+            console.log('Body classes:', bodyClasses);
+            
+            const adminColorClass = Array.from(document.body.classList).find(c => c.startsWith('admin-color-'));
+            if (adminColorClass) {
+                console.log('✅ Admin color class found:', adminColorClass);
+                document.getElementById('status').innerHTML = '<strong>✅ Admin color applied: ' + adminColorClass + '</strong>';
+            } else {
+                console.log('❌ No admin color class found');  
+                document.getElementById('status').innerHTML = '<strong>❌ No admin color applied</strong>';
+            }
+            
+            // Check if admin color CSS is loaded
+            const adminColorStyles = Array.from(document.styleSheets).find(sheet => 
+                sheet.href && sheet.href.includes('colors/')
+            );
+            if (adminColorStyles) {
+                console.log('✅ Admin color CSS found:', adminColorStyles.href);
+            } else {
+                console.log('❌ No admin color CSS found');
+            }
+            
+            // Show CSS variables
+            const computedStyle = getComputedStyle(document.body);
+            const primaryColor = computedStyle.getPropertyValue('--wp-admin-theme-color');
+            if (primaryColor) {
+                console.log('✅ CSS Variable --wp-admin-theme-color:', primaryColor);
+                document.getElementById('css-vars').innerHTML = '<strong>CSS Variables:</strong><br>--wp-admin-theme-color: ' + primaryColor;
+            } else {
+                document.getElementById('css-vars').innerHTML = '<strong>❌ No CSS variables found</strong>';
+            }
+        });
+    </script>
+    
+    <div id="status" style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; background: #f9f9f9;">
+        Checking admin color status...
+    </div>
+    
+    <div id="css-vars" style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; background: #f0f0f0;">
+        Checking CSS variables...
+    </div>
+</body>
+</html>
