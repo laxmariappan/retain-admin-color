@@ -116,7 +116,7 @@ class Retain_Admin_Color {
 				$primary_color = $admin_colors[ $admin_color ];
 			}
             wp_register_style('admin-bar-color', false);
-          //  wp_enqueue_style('admin-bar-color');
+            wp_enqueue_style('admin-bar-color');
             // Add inline style using WordPress API
             $custom_css = '#wpadminbar { background: ' . esc_attr($primary_color) . ' !important; }';
 			wp_add_inline_style( 'admin-bar-color', $custom_css );
