@@ -98,19 +98,20 @@ class Retain_Admin_Color {
 		}
 
 		$admin_color = get_user_meta( $user_id, 'admin_color', true );
-        $primary_color = '#23282d'; // Default fallback color
+        $primary_color = '#1d2327'; // Default fallback color
             
 		if ( ! empty( $admin_color ) ) {
 			// Hardcoded admin color values (primary color for each scheme)
 			$admin_colors = array(
-				'fresh'     => '#0073aa', // Default
+				'fresh'     => '#1d2327', // Default
 				'light'     => '#e5e5e5',
 				'blue'      => '#52accc',
 				'coffee'    => '#59524c',
 				'ectoplasm' => '#523f6d',
-				'midnight'  => '#e14d43',
+				'midnight'  => '#363b3f',
 				'ocean'     => '#738e96',
-				'sunrise'   => '#dd823b',
+				'sunrise'   => '#cf4944',
+                'modern'    => '#1e1e1e'
 			);
 			if ( isset( $admin_colors[ $admin_color ] ) ) {
 				$primary_color = $admin_colors[ $admin_color ];
