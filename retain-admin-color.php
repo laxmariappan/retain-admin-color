@@ -56,7 +56,6 @@ class Retain_Admin_Color {
 	 * Constructor.
 	 */
 	private function __construct() {
-		error_log( 'Retain Admin Color: Plugin constructor called' );
 		$this->init_hooks();
 	}
 
@@ -64,25 +63,11 @@ class Retain_Admin_Color {
 	 * Initialize hooks.
 	 */
 	private function init_hooks(): void {
-		error_log( 'Retain Admin Color: Initializing hooks' );
-		add_action( 'init', array( $this, 'load_textdomain' ) );
-		
-		// FOR FRONTEND - Apply admin color scheme to frontend admin bar
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_admin_styles' ) );
-		
-		// IMPORTANT: Hook into admin bar specifically
-		add_action( 'admin_bar_init', array( $this, 'setup_admin_bar_colors' ) );
-		
-		// FOR ADMIN - Keep the admin area working too
-		add_filter( 'get_user_option_admin_color', array( $this, 'force_user_admin_color' ), 10, 3 );
-		add_filter( 'pre_get_user_option_admin_color', array( $this, 'pre_force_user_admin_color' ), 10, 3 );
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
-		
-		// Debug both frontend and admin
-		add_action( 'init', array( $this, 'debug_init' ) );
-		add_action( 'wp_head', array( $this, 'debug_frontend' ) );
-		add_action( 'admin_init', array( $this, 'debug_admin_init' ) );
-		
+ 		add_action( 'init', array( $this, 'load_textdomain' ) );
+
+
+
+        add_action('wp_enqueue_scripts', array($this, 'add_admin_bar_color_style')); 		
 		// Activation and deactivation hooks
 		register_activation_hook( RETAIN_ADMIN_COLOR_PLUGIN_FILE, array( $this, 'activate' ) );
 		register_deactivation_hook( RETAIN_ADMIN_COLOR_PLUGIN_FILE, array( $this, 'deactivate' ) );
@@ -100,419 +85,44 @@ class Retain_Admin_Color {
 	}
 
 	/**
-	 * Debug function for init hook.
+	 * Add admin color to frontend.
 	 */
-	public function debug_init(): void {
-		$user_id = get_current_user_id();
-		$admin_color = '';
-		if ( $user_id ) {
-			$admin_color = get_user_meta( $user_id, 'admin_color', true );
+	public function add_admin_bar_color_style(): void {
+		if ( is_admin() ) {
+			return; // Only for frontend
 		}
-		$context = is_admin() ? 'ADMIN' : 'FRONTEND';
-		error_log( 'Retain Admin Color: init fired in ' . $context . ' - User ID: ' . $user_id . ' Admin Color: ' . $admin_color );
-	}
 
-	/**
-	 * Debug function for frontend.
-	 */
-	public function debug_frontend(): void {
-		$user_id = get_current_user_id();
-		$admin_color = '';
-		if ( $user_id ) {
-			$admin_color = get_user_meta( $user_id, 'admin_color', true );
-		}
-		error_log( 'Retain Admin Color: FRONTEND wp_head fired - User ID: ' . $user_id . ' Admin Color: ' . $admin_color );
-	}
-
-	/**
-	 * Setup admin bar colors when admin bar initializes.
-	 */
-	public function setup_admin_bar_colors(): void {
 		$user_id = get_current_user_id();
 		if ( ! $user_id ) {
-			return;
+			return; // Only for logged-in users
 		}
 
 		$admin_color = get_user_meta( $user_id, 'admin_color', true );
-		
-		if ( ! empty( $admin_color ) && 'fresh' !== $admin_color ) {
-			// Set the global admin color for the admin bar
-			global $_wp_admin_css_colors;
-			
-			if ( ! isset( $_wp_admin_css_colors[ $admin_color ] ) ) {
-				// Register the color scheme if it doesn't exist
-				$this->register_admin_color_scheme_global( $admin_color );
-			}
-			
-			error_log( 'Retain Admin Color: ADMIN BAR - Setup colors for ' . $admin_color );
-		}
-	}
-
-	/**
-	 * Register admin color scheme globally.
-	 *
-	 * @param string $color_scheme The color scheme name.
-	 */
-	private function register_admin_color_scheme_global( string $color_scheme ): void {
-		$color_schemes = array(
-			'light' => array(
-				'name' => __( 'Light' ),
-				'colors' => array( '#e5e5e5', '#999', '#d64e07', '#04a4cc' ),
-			),
-			'blue' => array(
-				'name' => __( 'Blue' ),
-				'colors' => array( '#52accc', '#096484', '#e14d43', '#096484' ),
-			),
-			'coffee' => array(
-				'name' => __( 'Coffee' ),
-				'colors' => array( '#46403c', '#59524c', '#c7a589', '#9ea476' ),
-			),
-			'ectoplasm' => array(
-				'name' => __( 'Ectoplasm' ),
-				'colors' => array( '#413256', '#523f6d', '#a3b745', '#d46f15' ),
-			),
-			'midnight' => array(
-				'name' => __( 'Midnight' ),
-				'colors' => array( '#25282b', '#363b3f', '#69a8bb', '#e14d43' ),
-			),
-			'ocean' => array(
-				'name' => __( 'Ocean' ),
-				'colors' => array( '#627c83', '#738e96', '#9ebaa0', '#87a6bc' ),
-			),
-			'sunrise' => array(
-				'name' => __( 'Sunrise' ),
-				'colors' => array( '#b43c38', '#cf4944', '#dd823b', '#ccaf0b' ),
-			),
-			'modern' => array(
-				'name' => __( 'Modern' ),
-				'colors' => array( '#1e1e1e', '#3858e9', '#833378', '#d22d2d' ),
-			),
-		);
-
-		if ( isset( $color_schemes[ $color_scheme ] ) ) {
-			$scheme = $color_schemes[ $color_scheme ];
-			wp_admin_css_color( 
-				$color_scheme, 
-				$scheme['name'], 
-				admin_url( "css/colors/$color_scheme/colors.min.css" ),
-				$scheme['colors']
+        $primary_color = '#23282d'; // Default fallback color
+            
+		if ( ! empty( $admin_color ) ) {
+			// Hardcoded admin color values (primary color for each scheme)
+			$admin_colors = array(
+				'fresh'     => '#0073aa', // Default
+				'light'     => '#e5e5e5',
+				'blue'      => '#52accc',
+				'coffee'    => '#59524c',
+				'ectoplasm' => '#523f6d',
+				'midnight'  => '#e14d43',
+				'ocean'     => '#738e96',
+				'sunrise'   => '#dd823b',
 			);
-			
-			error_log( 'Retain Admin Color: GLOBAL - Registered color scheme ' . $color_scheme );
-		}
-	}
-
-	/**
-	 * Debug function to check if admin_init fires.
-	 */
-	public function debug_admin_init(): void {
-		$user_id = get_current_user_id();
-		$admin_color = get_user_meta( $user_id, 'admin_color', true );
-		error_log( 'Retain Admin Color: admin_init fired - User ID: ' . $user_id . ' Admin Color: ' . $admin_color );
-		
-		// Test what get_user_option returns
-		$current_color = get_user_option( 'admin_color' );
-		error_log( 'Retain Admin Color: get_user_option admin_color returns: ' . $current_color );
-		
-		// Also test the body class that WordPress would generate
-		$body_class = 'admin-color-' . get_user_option( 'admin_color', $user_id );
-		error_log( 'Retain Admin Color: Expected body class: ' . $body_class );
-	}
-
-	/**
-	 * Force the user's admin color choice.
-	 *
-	 * @param mixed           $result The value to return instead.
-	 * @param string          $option Option name.
-	 * @param WP_User|int     $user   User object or User ID.
-	 * @return string
-	 */
-	public function force_user_admin_color( $result, string $option, $user ): string {
-		// Only process admin_color option
-		if ( 'admin_color' !== $option ) {
-			return $result;
-		}
-
-		// Only process in admin area
-		if ( ! is_admin() ) {
-			return $result;
-		}
-
-		// Handle both WP_User object and user ID
-		$user_id = is_object( $user ) && $user instanceof WP_User ? $user->ID : (int) $user;
-		
-		if ( ! $user_id ) {
-			return $result;
-		}
-
-		// Get the user's stored admin color preference
-		$user_admin_color = get_user_meta( $user_id, 'admin_color', true );
-		
-		if ( ! empty( $user_admin_color ) ) {
-			error_log( 'Retain Admin Color: Forcing admin color ' . $user_admin_color . ' for user ' . $user_id . ' (was: ' . $result . ')' );
-			return $user_admin_color;
-		}
-
-		return $result;
-	}
-
-	/**
-	 * Pre-filter the user's admin color choice (earlier hook).
-	 *
-	 * @param mixed           $result The value to return instead.
-	 * @param string          $option Option name.
-	 * @param WP_User|int     $user   User object or User ID.
-	 * @return mixed
-	 */
-	public function pre_force_user_admin_color( $result, string $option, $user ) {
-		if ( 'admin_color' !== $option ) {
-			return $result;
-		}
-
-		if ( ! is_admin() ) {
-			return $result;
-		}
-
-		$user_id = is_object( $user ) && $user instanceof WP_User ? $user->ID : (int) $user;
-		
-		if ( ! $user_id ) {
-			return $result;
-		}
-
-		$user_admin_color = get_user_meta( $user_id, 'admin_color', true );
-		
-		if ( ! empty( $user_admin_color ) ) {
-			error_log( 'Retain Admin Color: PRE-forcing admin color ' . $user_admin_color . ' for user ' . $user_id );
-			return $user_admin_color;
-		}
-
-		return $result;
-	}
-
-	/**
-	 * Enqueue admin color styles on the frontend.
-	 */
-	public function enqueue_frontend_admin_styles(): void {
-		if ( is_admin() ) {
-			return; // Only for frontend
-		}
-
-		$user_id = get_current_user_id();
-		if ( ! $user_id ) {
-			return; // Only for logged-in users
-		}
-
-		$admin_color = get_user_meta( $user_id, 'admin_color', true );
-
-		if ( ! empty( $admin_color ) && 'fresh' !== $admin_color ) {
-			// Load the correct WordPress admin color CSS for frontend admin bar
-			// Using the same URL structure as WordPress admin: /wp-admin/css/colors/{color}/colors.min.css
-			$css_url = admin_url( "css/colors/$admin_color/colors.min.css" );
-			
-			// Also check the includes version as backup
-			$includes_css_url = includes_url( "css/colors/$admin_color/colors.min.css" );
-			$css_path = ABSPATH . WPINC . "/css/colors/$admin_color/colors.min.css";
-			
-			if ( file_exists( $css_path ) ) {
-				// Enqueue the admin color CSS for the frontend admin bar
-				wp_enqueue_style( 
-					'admin-color-' . $admin_color, 
-					$css_url,
-					array( 'admin-bar' ), // Depend on admin-bar styles
-					get_bloginfo( 'version' ) 
-				);
-				
-				error_log( 'Retain Admin Color: FRONTEND - Enqueued admin bar colors: ' . $css_url );
-				
-				// Also add inline CSS to ensure admin bar gets the colors
-				$this->add_admin_bar_color_css( $admin_color );
+			if ( isset( $admin_colors[ $admin_color ] ) ) {
+				$primary_color = $admin_colors[ $admin_color ];
 			}
-		}
-	}
+            wp_register_style('admin-bar-color', false);
+          //  wp_enqueue_style('admin-bar-color');
+            // Add inline style using WordPress API
+            $custom_css = '#wpadminbar { background: ' . esc_attr($primary_color) . ' !important; }';
+			wp_add_inline_style( 'admin-bar-color', $custom_css );
 
-	/**
-	 * Add inline CSS specifically for admin bar coloring.
-	 *
-	 * @param string $admin_color The admin color scheme name.
-	 */
-	private function add_admin_bar_color_css( string $admin_color ): void {
-		$color_data = $this->get_color_scheme_data( $admin_color );
-		
-		$inline_css = "
-		/* Retain Admin Color - Force admin bar colors for {$admin_color} scheme */
-		#wpadminbar {
-			background: {$color_data['primary']} !important;
-		}
-		#wpadminbar .ab-top-menu > li.hover > .ab-item,
-		#wpadminbar .ab-top-menu > li:hover > .ab-item,
-		#wpadminbar .ab-top-menu > li > .ab-item:focus,
-		#wpadminbar.nojq .quicklinks .ab-top-menu > li > .ab-item:focus {
-			background: {$color_data['secondary']} !important;
-		}
-		#wpadminbar .ab-top-menu > li.hover > .ab-item,
-		#wpadminbar .ab-top-menu > li:hover > .ab-item {
-			color: {$color_data['highlight']} !important;
-		}
-		#wpadminbar .ab-icon,
-		#wpadminbar .ab-icon:before,
-		#wpadminbar .ab-item:before {
-			color: {$color_data['tertiary']} !important;
-		}
-		";
-		
-		wp_add_inline_style( 'admin-color-' . $admin_color, $inline_css );
-		
-		error_log( 'Retain Admin Color: FRONTEND - Added inline admin bar CSS for ' . $admin_color );
-	}
-
-	/**
-	 * Add admin color body class to frontend.
-	 */
-	public function add_frontend_admin_color_body_class(): void {
-		if ( is_admin() ) {
-			return; // Only for frontend
-		}
-
-		$user_id = get_current_user_id();
-		if ( ! $user_id ) {
-			return; // Only for logged-in users
-		}
-
-		$admin_color = get_user_meta( $user_id, 'admin_color', true );
-
-		if ( ! empty( $admin_color ) ) {
-			// Get color scheme colors
-			$color_data = $this->get_color_scheme_data( $admin_color );
-			
-			// Add comprehensive styling and body class
-			echo '<style type="text/css">
-				/* Retain Admin Color - ' . esc_attr( $admin_color ) . ' scheme */
-				body.admin-color-' . esc_attr( $admin_color ) . ' {
-					--wp-admin-theme-color: ' . esc_attr( $color_data['primary'] ) . ';
-					--wp-admin-theme-color-darker-10: ' . esc_attr( $color_data['secondary'] ) . ';
-					--wp-admin-border-color-darker-20: ' . esc_attr( $color_data['tertiary'] ) . ';
-					--wp-admin-scheme-color: ' . esc_attr( $color_data['highlight'] ) . ';
-				}
-				
-				/* Apply admin colors to common elements */
-				body.admin-color-' . esc_attr( $admin_color ) . ' .admin-color-element {
-					background-color: var(--wp-admin-theme-color);
-					color: white;
-				}
-				
-				body.admin-color-' . esc_attr( $admin_color ) . ' .admin-color-border {
-					border-color: var(--wp-admin-theme-color);
-				}
-			</style>' . "\n";
-			
-			// Add the admin color class to the body via JavaScript
-			echo '<script type="text/javascript">
-				document.addEventListener("DOMContentLoaded", function() {
-					document.body.classList.add("admin-color-' . esc_js( $admin_color ) . '");
-					console.log("Retain Admin Color: Applied ' . esc_js( $admin_color ) . ' color scheme to frontend");
-				});
-			</script>' . "\n";
-			
-			error_log( 'Retain Admin Color: FRONTEND - Added comprehensive styling for ' . $admin_color );
-		}
-	}
-
-	/**
-	 * Get color scheme data for a given admin color.
-	 *
-	 * @param string $color_scheme The color scheme name.
-	 * @return array Array with primary, secondary, tertiary, and highlight colors.
-	 */
-	private function get_color_scheme_data( string $color_scheme ): array {
-		$color_schemes = array(
-			'fresh' => array(
-				'primary' => '#0073aa',
-				'secondary' => '#005177', 
-				'tertiary' => '#0085ba',
-				'highlight' => '#00a0d2'
-			),
-			'light' => array(
-				'primary' => '#999999',
-				'secondary' => '#666666',
-				'tertiary' => '#d54e21',
-				'highlight' => '#04a4cc'
-			),
-			'blue' => array(
-				'primary' => '#52accc',
-				'secondary' => '#096484',
-				'tertiary' => '#e14d43', 
-				'highlight' => '#096484'
-			),
-			'coffee' => array(
-				'primary' => '#46403c',
-				'secondary' => '#59524c',
-				'tertiary' => '#c7a589',
-				'highlight' => '#9ea476'
-			),
-			'ectoplasm' => array(
-				'primary' => '#523f6d',
-				'secondary' => '#413256',
-				'tertiary' => '#a3b745',
-				'highlight' => '#d46f15'
-			),
-			'midnight' => array(
-				'primary' => '#363b3f',
-				'secondary' => '#25282b',
-				'tertiary' => '#69a8bb',
-				'highlight' => '#e14d43'
-			),
-			'ocean' => array(
-				'primary' => '#738e96',
-				'secondary' => '#627c83',
-				'tertiary' => '#9ebaa0',
-				'highlight' => '#87a6bc'
-			),
-			'sunrise' => array(
-				'primary' => '#cf4944',
-				'secondary' => '#b43c38',
-				'tertiary' => '#dd823b',
-				'highlight' => '#ccaf0b'
-			),
-			'modern' => array(
-				'primary' => '#3858e9',
-				'secondary' => '#1e1e1e',
-				'tertiary' => '#833378',
-				'highlight' => '#d22d2d'
-			),
-		);
-
-		return $color_schemes[ $color_scheme ] ?? $color_schemes['fresh'];
-	}
-
-	/**
-	 * Enqueue admin styles to ensure color scheme is properly applied.
-	 */
-	public function enqueue_admin_styles(): void {
-		if ( ! is_admin() || ! is_user_logged_in() ) {
-			return;
-		}
-
-		$user_id = get_current_user_id();
-		$admin_color = get_user_meta( $user_id, 'admin_color', true );
-
-		if ( ! empty( $admin_color ) ) {
-			// Force the correct color scheme CSS to load
-			$css_url = includes_url( "css/colors/$admin_color/colors.min.css" );
-			
-			// Check if the CSS file exists before trying to enqueue it
-			$css_path = ABSPATH . WPINC . "/css/colors/$admin_color/colors.min.css";
-			if ( file_exists( $css_path ) ) {
-				wp_enqueue_style( 
-					'colors-' . $admin_color, 
-					$css_url, 
-					array(), 
-					get_bloginfo( 'version' ) 
-				);
-				
-				error_log( 'Retain Admin Color: Force enqueued ' . $admin_color . ' CSS' );
-			}
-		}
-	}
+         }
+     }
 
 	/**
 	 * Plugin activation hook.
@@ -544,10 +154,8 @@ class Retain_Admin_Color {
  * Initialize the plugin.
  */
 function retain_admin_color_init(): Retain_Admin_Color {
-	error_log( 'Retain Admin Color: retain_admin_color_init() called' );
-	return Retain_Admin_Color::get_instance();
+ 	return Retain_Admin_Color::get_instance();
 }
 
 // Initialize the plugin
-error_log( 'Retain Admin Color: Plugin file loaded, calling init function' );
 retain_admin_color_init();
